@@ -15,20 +15,6 @@ options(width = 60)
 \thispagestyle{empty}
 \titlepage
 
-# Introduction to Labs
-
-All lab code has been loaded onto a cloud-based server that includes R Studio with all packages installed that are needed to follow up along with lab exercises. 
-
-To login to the remote machine:
-
-* Open a web browser and navigate to http://ipaddress:8787 (we will tell you ipaddress)
-* Your user name and password is the first initial of your first name and your last name (all lower case)
-* E.g., David Benkeser = dbenkeser
-* Once you've logged in, click on the Open Folder
-* You will see directories with the contents of each lab in each folder
-* The `.Rmd` files include all writing on the slides in addition to code
-* The `.R` files include only the `R` code
-
 # Contents of this Lab
 
 * Understanding cross-validation and ensemble estimators. 
@@ -37,6 +23,34 @@ To login to the remote machine:
 * Writing your own variable screening wrapper that is compatible with `SuperLearner`.
 * Evaluating the performance of `SuperLearner`.
 * Writing up the results of a super learner analysis. 
+
+# Installing \texttt{R} packages
+
+To follow along with this demonstration, you will need several \texttt{R} packages. \vspace{-0.15in} 
+
+\begin{itemize} \setlength\itemsep{0em}
+	\item Packages are freely available from the Comprehensive R Archive Network (CRAN).
+	\item Packages are downloaded to your local computer via the \texttt{install.packages} function.
+	\item Packages are loaded into your current \texttt{R} session via \texttt{require} or \texttt{library}
+\end{itemize}
+
+```{r installpack, message=FALSE, eval = FALSE}
+# these packages are needed to execute the demo
+pkgs <- c("SuperLearner", "quadprog", "nloptr", "MASS", "ggplot2", "nnls")
+# see what packages are currently installed 
+installed_pacakges <- row.names(installed.packages())
+# loop over the needed packages
+for(p in pkgs){
+  # check if package is installed
+  already_installed <- p %in% installed_pacakges 
+  # if not already installed, install it
+  if(!already_installed){
+    install.packages(p)
+  }
+  # and load package
+  library(p, character.only = TRUE)
+}
+```
 
 # Simulating data
 
@@ -176,6 +190,7 @@ cv_risk_Q2 <- (risk_Q2_split1 + risk_Q2_split2) / 2
 	\item If you can fit a regression technique, and know how to predict from the fitted regression, you can perform cross-validation. 
 	\item Fit the regression on a portion of the data; predict values on an \textcolor{blue}{independent portion}; evaluate risk. 
 \end{itemize}
+Note that we would typically use more cross-validation folds (e.g., 5 or 10).
 
 
 # Ensembles of regression estimators
@@ -184,7 +199,7 @@ As we discussed in the last chapter, there is often a benefit to using weighted 
 
 ```{r}
 # a function to generate a prediction from an ensemble of Q1 and Q2
-# Q1_fit and Q2_fit are fitted glm's
+# Q1_fit and Q2_fit are fitted glms
 # newdata is a data.frame that you want to get predictions on
 # Q1_weight is the weight given to the prediction from Q1_fit
 # Q2_weight is 1 - Q1_weight
@@ -281,9 +296,9 @@ cv_risk_ens <- (risk_ens_split1 + risk_ens_split2) / 2
 Now we compute the cross-validated risk for many choices of weights. 
 
 ```{r cv_risk_fn}
-# define an empty vector of cv risk values
+# define an empty vector of CV risk values
 cv_risks <- rep(NA, length(weight_sequence))
-# for each value of weights compute the cv risk
+# for each value of weights compute the CV risk
 for(i in seq_along(weight_sequence)){
 	# get ensemble predictions on split 2 from fits in split 1
 	enspred_split2 <- ensemble_predict(Q1_fit = Q1_fit_split1,
@@ -299,7 +314,7 @@ for(i in seq_along(weight_sequence)){
 	                                   newdata = split1)
 	# estimate of MSE based on split 1
 	risk_ens_split1 <- mean((Y[split == 1] - enspred_split1)^2)
-	# save cv risk in cv_risks vector
+	# save CV risk in cv_risks vector
 	cv_risks[i] <- (risk_ens_split1 + risk_ens_split2) / 2
 }	
 ```
@@ -360,14 +375,12 @@ Learning objectives for today: \vspace{-0.1in}
 
 A rundown of the most important options for the `SuperLearner` function: \vspace{-0.1in}
 
-* `Y` = outcome (i.e., $Y$ for outcome regression, $A$ for propensity score);
-* `X` = covariates (i.e., $(A,W)$ for the outcome regression, $W$ for propensity score);
-* `SL.library` = candidate regression algorithms; 
-* `family` = `gaussian()` or `binomial()`, changes behavior of algorithms in `SL.library`;
-* `method` = specifies risk criteria and type of ensemble, good default is `"method.CC_LS` for continuous and `method.CC_nloglik` for binary outcomes;\footnotemark
-* `id` = observation identifier, cross-validation is done by `id`, so different `id`'s should imply independent observations; 
-* `cvControl` = controls the cross-validation procedure, most important is `V` which controls the number of folds, see `?SuperLearner.CV.control` for all controls. 
-* `verbose` = boolean indicating whether or not to print out messages. 
+* `Y`: outcome (i.e., $Y$ for outcome regression, $A$ for propensity score);
+* `X`: covariates (i.e., $(A,W)$ for the outcome regression, $W$ for propensity score);
+* `SL.library`: candidate regression algorithms; 
+* `family`: `gaussian()` or `binomial()`; changes behavior of algorithms in `SL.library`;
+* `method`: specifies risk criteria and type of ensemble; good default is `"method.CC_LS` for continuous and `method.CC_nloglik` for binary outcomes;\footnotemark
+* `cvControl`: controls the cross-validation procedure; most important is `V` which controls the number of folds; see `?SuperLearner.CV.control` for all controls. 
 
 \footnotetext[1]{These are \textcolor{red}{not the default} values, but in my opinion are more theoretically justified than the defaults.}
 
@@ -459,7 +472,7 @@ We need to write our own functions that play nicely with `SuperLearner`!
 
 # Writing your own regression
 
-As an example, let's take a look at the `SL.glm` function to see it's format. 
+As an example, let's take a look at the `SL.glm` function to see its format. 
 
 ```{r look_at_slglm}
 SL.glm
@@ -469,11 +482,11 @@ SL.glm
 
 The key inputs that are taken by a `SuperLearner` wrapper function are \vspace{-0.1in}
 
-* `Y` = vector of outcomes used to fit the regression;
-* `X` = matrix of covariates used to fit the regression;
-* `newX` = matrix of covariates that we use to get predictions from the fitted regression;
-* `family` = `gaussian()` or `binomial()` $\rightarrow$ linear or logistic regression;
-* `...` = allows other arguments to be passed in without breaking.
+* `Y`: vector of outcomes used to fit the regression;
+* `X`: matrix of covariates used to fit the regression;
+* `newX`: matrix of covariates that we use to get predictions from the fitted regression;
+* `family`: `gaussian()` or `binomial()` $\rightarrow$ linear or logistic regression;
+* `...`: allows other arguments to be passed in without breaking.
 
 The general work flow of a `SuperLearner` wrapper function is \vspace{-0.1in}
 
@@ -565,7 +578,7 @@ We need to tell `R` how to predict from our regression. \vspace{-0.1in}
 In `R`, when we call `predict(some_object)` where `some_object` has class `some_class`, `R` will attempt to execute `predict.some_class(some_object)`. \vspace{-0.1in}
 
 * The previous error is because we have not defined a function `predict.SL.quadglm`. 
-* Such functions (referred to as `method`'s) need to have a specific format. 
+* Such functions (referred to as `method`s) need to have a specific format. 
 * In this case, it needs to \emph{at least} take as input `object` and `...` .
 
 ```{r define_predict_method}
@@ -717,10 +730,10 @@ We can combine variable screening procedures with different regression technique
 
 The key inputs that are taken by a `SuperLearner` variable screening function are \vspace{-0.1in}
 
-* `Y` = vector of outcomes used to fit the regression;
-* `X` = matrix of covariates used to fit the regression;
-* `family` = `gaussian()` or `binomial()`;
-* `...` = allows other arguments to be passed in without breaking.
+* `Y`: vector of outcomes used to fit the regression;
+* `X`: matrix of covariates used to fit the regression;
+* `family`: `gaussian()` or `binomial()`;
+* `...`: allows other arguments to be passed in without breaking.
 
 The general work flow of a `SuperLearner` variable screening function is \vspace{-0.1in}
 
@@ -813,7 +826,7 @@ sl_fit5
 
 Often, we would like to objectively evaluate the performance of the super learner. \vspace{-0.1in}
 	
-* Theory says we do well eventually, but did we do well in these data?
+* Theory says we do well eventually (in the sample size sense), but did we do well in these data?
 * \textcolor{red}{The risk of the super learner can be estimated using cross-validation.}
 * In the `SuperLearner` package, this is achieved via the `CV.SuperLearner` function. 
 
@@ -851,7 +864,7 @@ __Analysis__ \vspace{-0.15in}
 
 * Generally, `V = 5` or `V = 10` folds is adequate.
 * Include your own regressions.
-* Include flexible learners -- `SL.earth` (polynomial multivariate adaptive regression splines), `SL.gbm` (gradient boosted machines), and `SL.ranger` (fast random forests) are good examples. 
+* Include flexible learners -- `SL.earth` (polynomial multivariate adaptive regression splines), `SL.xgboost` (gradient boosted machines), and `SL.ranger` (fast random forests) are good examples. 
 * Consider permuting treatment assignment when developing code to remain objective. 
 
 __Flexibility vs. computer time__ \vspace{-0.15in}

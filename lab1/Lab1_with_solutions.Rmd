@@ -79,31 +79,6 @@ QAW <- W1 - W2 + A
 Y <- QAW + rnorm(n = n)
 ```
 
-<!-- # A function for simulating data
-
-For later use, we will define a function that generates simulated data. 
-
-```{r sim_data_fn}
-# the function takes sample size, n, as input
-make_data <- function(n){
-	# W1 has Normal distribution, W2 has Uniform distribution
-	W1 <- rnorm(n); W2 <- runif(n)
-	# pr(A = 1 | W) is logistic linear in W
-	g1W <- plogis(-1 + W1 - W2 + W1*W2)
-	# generate binary treatment 
-	A <- rbinom(n, 1, g1W)
-	# E[Y | A, W] is linear in A, W
-	QAW <- W1 - W2 + A
-	# generate outcome by adding random error
-	Y <- QAW + rnorm(n, 0, 1)
-	# put everything into a data.frame
-	all_data <- data.frame(W1 = W1, W2 = W2, A = A, Y = Y)
-	# return the data.frame
-	return(all_data)
-}
-```
--->
-
 # Cross-validation
 
 Our first exercise involves comparing two estimates of $\bar{Q}(a,w) = E[Y \midd A=a, W=w]$. \vspace{-0.15in} 
@@ -157,7 +132,7 @@ risk_Q1_split2 <- mean((Y[split == 2] - Q1n_split2)^2)
 # fit Q1 in split 2
 Q1_fit_split2 <- glm(Y ~ W1 + W2 + A, data = split2)
 # predict from split 2 fit in split 1
-Q1n_split1 <- predict(Q1_fit_split1, newdata = split1)
+Q1n_split1 <- predict(Q1_fit_split2, newdata = split1)
 # estimate of MSE based on split 1
 risk_Q1_split1 <- mean((Y[split == 1] - Q1n_split1)^2)
 # average the two estimates
@@ -218,6 +193,7 @@ cv_risk_Q2 <- (risk_Q2_split1 + risk_Q2_split2) / 2
 	\item If you can fit a regression technique, and know how to predict from the fitted regression, you can perform cross-validation. 
 	\item Fit the regression on a portion of the data; predict values on an \textcolor{blue}{independent portion}; evaluate risk. 
 \end{itemize}
+Note that we would typically use more cross-validation folds (e.g., 5 or 10).
 
 
 # Ensembles of regression estimators
@@ -407,9 +383,7 @@ A rundown of the most important options for the `SuperLearner` function: \vspace
 * `SL.library`: candidate regression algorithms; 
 * `family`: `gaussian()` or `binomial()`; changes behavior of algorithms in `SL.library`;
 * `method`: specifies risk criteria and type of ensemble; good default is `"method.CC_LS` for continuous and `method.CC_nloglik` for binary outcomes;\footnotemark
-<!-- * `id`: observation identifier, cross-validation is done by `id`, so different `id`'s should imply independent observations;  -->
 * `cvControl`: controls the cross-validation procedure; most important is `V` which controls the number of folds; see `?SuperLearner.CV.control` for all controls. 
-<!-- * `verbose`: boolean indicating whether or not to print out messages.  -->
 
 \footnotetext[1]{These are \textcolor{red}{not the default} values, but in my opinion are more theoretically justified than the defaults.}
 

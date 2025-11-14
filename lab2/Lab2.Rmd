@@ -241,6 +241,14 @@ We can use the `riskRatio` contrast defined previously to test $H_0: E[Y(0)]/E[Y
 wald_test(fit1, contrast = riskRatio, null = 1)
 ```
 
+# Extra material
+
+\vspace{0.4in}
+
+\begin{center}
+Time permitting\ldots
+\end{center}
+
 # Note on common warning messages 
 
 You may see the following warning messages: 
